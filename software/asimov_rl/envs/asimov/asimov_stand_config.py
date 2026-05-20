@@ -154,20 +154,20 @@ class AsimovStandCfg(LeggedRobotCfg):
         # strategy), which appears to make walking harder to learn. Trying X1
         # gains to see if the policy can find the same lead-control strategy.
         stiffness = {
-            'hip_pitch_joint':   30,
-            'hip_roll_joint':    40,
-            'hip_yaw_joint':     35,
-            'knee_joint':        100,
-            'ankle_pitch_joint': 35,
-            'ankle_roll_joint':  35,
+            'hip_pitch_joint':   300,
+            'hip_roll_joint':    400,
+            'hip_yaw_joint':     350,
+            'knee_joint':        500,
+            'ankle_pitch_joint': 70,
+            'ankle_roll_joint':  70,
         }
         damping = {
-            'hip_pitch_joint':   3,
-            'hip_roll_joint':    3.0,
-            'hip_yaw_joint':     4,
-            'knee_joint':        10,
-            'ankle_pitch_joint': 0.5,
-            'ankle_roll_joint':  0.5,
+            'hip_pitch_joint':   30,
+            'hip_roll_joint':    30,
+            'hip_yaw_joint':     40,
+            'knee_joint':        100,
+            'ankle_pitch_joint': 5,
+            'ankle_roll_joint':  5,
         }
 
         action_scale = 0.5
