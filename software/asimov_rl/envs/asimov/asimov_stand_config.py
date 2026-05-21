@@ -145,29 +145,29 @@ class AsimovStandCfg(LeggedRobotCfg):
     class control(LeggedRobotCfg.control):
         control_type = 'P'
 
-        # PD gains: reverted to X1 baseline. The earlier test_lift_foot diagnosis
-        # ("hip kp=30 only tracks 50% of target") is correct for OPEN-LOOP PD
-        # control on a single commanded motion, but the X1 sim2sim log shows
-        # the trained policy commands targets ~2x beyond the desired joint
-        # position and relies on low PD + inertia to actually swing the leg.
-        # High PD forces the policy to command targets directly (no overshoot
-        # strategy), which appears to make walking harder to learn. Trying X1
-        # gains to see if the policy can find the same lead-control strategy.
+        # PD chosen jointly for static authority (lift leg vs gravity) and
+        # dynamic bandwidth at gait freq 1.43 Hz. Both X1-baseline (hip kp=30)
+        # and high-PD (hip kp=300, knee kp=500, kd=100) fail differently:
+        # baseline lacks torque to lift Asimov's leg (test_lift_foot.py),
+        # high-PD overdamps the knee (49% transmission at gait freq, measured
+        # in tools/test_pd_bandwidth.py). These values give knee 84%, hip 97%
+        # transmission with enough static kp to hold a 0.4 rad target against
+        # gravity. See [[project_asimov_walking_root_causes]].
         stiffness = {
-            'hip_pitch_joint':   300,
-            'hip_roll_joint':    400,
-            'hip_yaw_joint':     350,
-            'knee_joint':        500,
-            'ankle_pitch_joint': 70,
-            'ankle_roll_joint':  70,
+            'hip_pitch_joint':   100,
+            'hip_roll_joint':    80,
+            'hip_yaw_joint':     60,
+            'knee_joint':        150,
+            'ankle_pitch_joint': 50,
+            'ankle_roll_joint':  40,
         }
         damping = {
-            'hip_pitch_joint':   30,
-            'hip_roll_joint':    30,
-            'hip_yaw_joint':     40,
-            'knee_joint':        100,
-            'ankle_pitch_joint': 5,
-            'ankle_roll_joint':  5,
+            'hip_pitch_joint':   8,
+            'hip_roll_joint':    6,
+            'hip_yaw_joint':     5,
+            'knee_joint':        12,
+            'ankle_pitch_joint': 2,
+            'ankle_roll_joint':  2,
         }
 
         action_scale = 0.5
@@ -355,12 +355,6 @@ class AsimovStandCfg(LeggedRobotCfg):
         max_contact_force = 700
 
         class scales:
-            # Identical to X1's scales — X1 trains stable walking with these.
-            # Earlier attempts to scale up feet_air_time/feet_clearance were
-            # treating symptoms; the actual problem (right ankle_pitch sign,
-            # mirrored joint axes) is now fixed in default_joint_angles and
-            # final_swing_joint_delta_pos. Reverting reward scales to X1
-            # baseline to test whether the fixes alone are sufficient.
             ref_joint_pos = 2.2
             feet_clearance = 1.
             feet_contact_number = 2.0
