@@ -380,7 +380,7 @@ class AsimovStandCfg(LeggedRobotCfg):
             collision = -1.
             stand_still = 2.5
             dof_vel_limits = -1
-            dof_pos_limits = -10.
+            dof_pos_limits = -1.       # was -10 (X1 default). Asimov's ankle_pitch range is only ±0.35 vs X1's ±π, so the policy hits soft-limits constantly trying to dorsi-flex for toe clearance. -10 scale punished any exploration of ankle motion → rew_feet_clearance stuck at 0.012 (vs X1 0.31). Relaxed to -1 to let policy explore ankle range needed for foot lift.
             dof_torque_limits = -0.1
 
     class normalization:
