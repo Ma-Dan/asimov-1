@@ -121,24 +121,24 @@ class AsimovStandCfg(LeggedRobotCfg):
         # rotation here moves the leg backward), and knee positive to bend
         # toward flexion. Verified with tools/test_default_pose.py.
         default_joint_angles = {
-            # COM-centering fix: previous pose (hip_pitch ±0.20) put COM at 28%
-            # from heel — leaving only 6.2cm back-margin vs 15.6cm front-margin
-            # (foot length 21.8cm including toe). Any forward swing during
-            # walking pushed COM past the heel → backward tipping (仰天摔倒).
-            # Reduced hip_pitch magnitude from 0.20 to 0.10 to lean torso
-            # slightly forward, recentering COM at 50% of foot support polygon.
-            # Verified: front-margin 10.9cm, back-margin 10.7cm (balanced).
-            'left_hip_pitch_joint':   -0.20,    # was -0.10 — sweep_default_pose: ±0.20 puts COM 1.6cm fwd of ankle mid (±0.10 was 6.1cm)
+            # Sagittal COM centering: hip_pitch ±0.25 (was ±0.20).
+            # sweep_default_pose.py: ±0.20 leaves COM 1.6cm forward of foot
+            # midpoint → backward walking unstable (low_speed stuck negative,
+            # 倒退倒地). ±0.25 puts COM 0.6cm behind foot midpoint (slight back
+            # bias, symmetric fore/aft margin). Previous worry about ankle hitting
+            # ±0.35 limit during swing is now mitigated: dof_pos_limits scale
+            # relaxed from -10 to -1, so brief excursions to -0.38 are tolerated.
+            'left_hip_pitch_joint':   -0.25,
             'left_hip_roll_joint':    0.10,
             'left_hip_yaw_joint':     0.0,
             'left_knee_joint':        0.40,
-            'left_ankle_pitch_joint':-0.20,     # match hip to keep shank vertical
+            'left_ankle_pitch_joint':-0.25,     # match hip to keep shank vertical
             'left_ankle_roll_joint':  0.0,
-            'right_hip_pitch_joint':  0.20,     # mirror
+            'right_hip_pitch_joint':  0.25,     # mirror
             'right_hip_roll_joint':  -0.10,
             'right_hip_yaw_joint':    0.0,
             'right_knee_joint':      -0.40,
-            'right_ankle_pitch_joint': 0.20,    # mirror
+            'right_ankle_pitch_joint': 0.25,    # mirror
             'right_ankle_roll_joint': 0.0,
         }
 
@@ -321,7 +321,7 @@ class AsimovStandCfg(LeggedRobotCfg):
         # Asimov pelvis_link sits at 0.63 m at default pose, but with the
         # default-bent-knee init posture above, expected standing height is
         # roughly 0.58 m. Tune empirically once training runs.
-        base_height_target = 0.58
+        base_height_target = 0.62       # was 0.58 — but kinematic base_height (pelvis - foot_sole) at the default pose is 0.624 and dynamic PD-settled is 0.622, so target 0.58 gave reward exp(-4.4)≈0.012 every step regardless of pose. Set to 0.62 to match actual standing height. measure_stand_height.py confirms.
         foot_min_dist = 0.15         # Asimov hip width ~0.135 m (vs X1 0.2)
         foot_max_dist = 1.0
 
