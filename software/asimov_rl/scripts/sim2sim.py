@@ -44,7 +44,8 @@ from asimov_rl.utils.helpers import get_load_path
 import os
 import time
 
-x_vel_cmd, y_vel_cmd, yaw_vel_cmd = 0.0, 0.0, 0.0
+#x_vel_cmd, y_vel_cmd, yaw_vel_cmd = 0.0, 0.0, 0.0
+x_vel_cmd, y_vel_cmd, yaw_vel_cmd = 1.0, 0.0, 0.0
 joystick_use = True
 joystick_opened = False
 joystick = None
@@ -146,6 +147,14 @@ def run_mujoco(policy, cfg, env_cfg):
     target_q = np.zeros((env_cfg.env.num_actions), dtype=np.double)
     action = np.zeros((env_cfg.env.num_actions), dtype=np.double)
 
+    # ── L/R mirror mask (must match asimov_stand_env.py) ─────────────────
+    # The policy was trained with canonical (L↔R symmetric) joint encoding.
+    # MuJoCo's dof_pos/dof_vel come out in RAW URDF convention, so we mirror
+    # the right half before feeding to policy (obs path). The policy outputs
+    # canonical actions, so we mirror right half back to raw before PD.
+    # Layout: 0-5=L{hip_p,hip_r,hip_y,knee,ankle_p,ankle_r}, 6-11=R{same}.
+    mirror_mask = np.array([1.0]*6 + [-1.0]*6, dtype=np.double)
+
     hist_obs = deque()
     for _ in range(env_cfg.env.frame_stack):
         hist_obs.append(np.zeros([1, env_cfg.env.num_single_obs], dtype=np.double))
@@ -222,8 +231,10 @@ def run_mujoco(policy, cfg, env_cfg):
                 obs[0, 0] = x_vel_cmd * env_cfg.normalization.obs_scales.lin_vel
                 obs[0, 1] = y_vel_cmd * env_cfg.normalization.obs_scales.lin_vel
                 obs[0, 2] = yaw_vel_cmd * env_cfg.normalization.obs_scales.ang_vel
-            obs[0, env_cfg.env.num_commands:env_cfg.env.num_commands+env_cfg.env.num_actions] = (q - cfg.robot_config.default_dof_pos) * env_cfg.normalization.obs_scales.dof_pos
-            obs[0, env_cfg.env.num_commands+env_cfg.env.num_actions:env_cfg.env.num_commands+2*env_cfg.env.num_actions] = dq * env_cfg.normalization.obs_scales.dof_vel
+            # dof_pos / dof_vel from MuJoCo are RAW URDF convention → mirror right half to canonical for policy.
+            obs[0, env_cfg.env.num_commands:env_cfg.env.num_commands+env_cfg.env.num_actions] = (q - cfg.robot_config.default_dof_pos) * env_cfg.normalization.obs_scales.dof_pos * mirror_mask
+            obs[0, env_cfg.env.num_commands+env_cfg.env.num_actions:env_cfg.env.num_commands+2*env_cfg.env.num_actions] = dq * env_cfg.normalization.obs_scales.dof_vel * mirror_mask
+            # `action` already holds the previous CANONICAL policy output, no mirror needed.
             obs[0, env_cfg.env.num_commands+2*env_cfg.env.num_actions:env_cfg.env.num_commands+3*env_cfg.env.num_actions] = action
             obs[0, env_cfg.env.num_commands+3*env_cfg.env.num_actions:env_cfg.env.num_commands+3*env_cfg.env.num_actions+3] = omega
             obs[0, env_cfg.env.num_commands+3*env_cfg.env.num_actions+3:env_cfg.env.num_commands+3*env_cfg.env.num_actions+6] = eu_ang
@@ -234,7 +245,7 @@ def run_mujoco(policy, cfg, env_cfg):
                 stand_command = (vel_norm <= env_cfg.commands.stand_com_threshold)
                 obs[0, -1] = stand_command
 
-            print(x_vel_cmd, y_vel_cmd, yaw_vel_cmd)
+            #print(x_vel_cmd, y_vel_cmd, yaw_vel_cmd)
 
             obs = np.clip(obs, -env_cfg.normalization.clip_observations, env_cfg.normalization.clip_observations)
 
@@ -247,7 +258,11 @@ def run_mujoco(policy, cfg, env_cfg):
 
             action[:] = policy(torch.tensor(policy_input))[0].detach().numpy()
             action = np.clip(action, -env_cfg.normalization.clip_actions, env_cfg.normalization.clip_actions)
-            target_q = action * env_cfg.control.action_scale
+            # Policy outputs CANONICAL action. Convert right half back to RAW
+            # URDF convention for the PD controller (which expects target_q as
+            # raw offset from raw default_dof_pos). Keep `action` itself canonical
+            # so the next obs's prev_action slot stays canonical (matches training).
+            target_q = (action * mirror_mask) * env_cfg.control.action_scale
 
         target_dq = np.zeros((env_cfg.env.num_actions), dtype=np.double)
         # Generate PD control
@@ -264,6 +279,21 @@ def run_mujoco(policy, cfg, env_cfg):
         count_lowlevel += 1
         idx = 5
         dof_pos_target = target_q + cfg.robot_config.default_dof_pos
+
+        # Live diagnostics once per simulated second.
+        # hip_pitch (idx 0,6) is the joint that physically swings the leg
+        # fore/aft — critical for forward locomotion.
+        if _ % 1000 == 0:
+            t = _ * cfg.sim_config.dt
+            print(
+                f"t={t:5.1f}s base_x={base_pos[0]:+.3f} vx={v[0]:+.3f}  "
+                f"cmd=({x_vel_cmd:+.2f},{y_vel_cmd:+.2f},{yaw_vel_cmd:+.2f})  "
+                f"L_hip q={q[0]:+.3f} tgt={dof_pos_target[0]:+.3f}  "
+                f"L_knee q={q[3]:+.3f} tgt={dof_pos_target[3]:+.3f}  "
+                f"R_hip q={q[6]:+.3f} tgt={dof_pos_target[6]:+.3f}  "
+                f"R_knee q={q[9]:+.3f} tgt={dof_pos_target[9]:+.3f}"
+            )
+
         if _ < stop_state_log:
             dict = {
                     'base_height': base_z,
