@@ -118,12 +118,12 @@
               <geom name="left_knee_link_collision" class="body_capsule" fromto="0 0 -0.04 0 0 -0.22" size="0.04" />
               <geom name="left_knee_link_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="left_knee_link.STL" class="visual" />
               <body name="left_ankle_pitch_link" pos="0 0 -0.294662336087024" quat="1.0 0.0 0.0 0.0">
-                <joint name="left_ankle_pitch_joint" type="hinge" ref="0.0" class="motor" range="-0.35 0.35" axis="0 1 0" armature="0.0565056" />
+                <joint name="left_ankle_pitch_joint" type="hinge" ref="0.0" class="motor" range="-0.7 0.7" axis="0 1 0" armature="0.0565056" />
                 <inertial pos="-0.00117927040588633 -3.07019113465756E-08 -0.00617619235424882" mass="0.273090119400173" fullinertia="6.4266131977376E-05 8.09944211394154E-05 4.71927841328634E-05 -2.40573155297429E-10 -1.07534511935557E-06 -2.30560104829896E-10" />
                 
                 <geom name="left_ankle_pitch_link_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="left_ankle_pitch_link.STL" class="visual" />
                 <body name="left_ankle_roll_link" pos="-0.00149999999999975 0 -0.00999999200000223" quat="1.0 0.0 0.0 0.0">
-                  <joint name="left_ankle_roll_joint" type="hinge" ref="0.0" class="motor" range="-0.1 0.1" axis="-1 0 0" armature="0.0565056" />
+                  <joint name="left_ankle_roll_joint" type="hinge" ref="0.0" class="motor" range="-0.3 0.3" axis="-1 0 0" armature="0.0565056" />
                   <inertial pos="0.0427499381311452 0.00159257307585033 -0.013245065948313" mass="0.405640437504617" fullinertia="0.000176487912025914 0.000413325911157839 0.000531913025014091 1.27462095049061E-05 -1.32327317762052E-05 5.53283535966561E-06" />
                   <geom name="left_ankle_roll_link_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="left_ankle_roll_link.STL" class="visual" />
                   <site name="left_foot" pos="0.04 0 -0.025" />
@@ -172,12 +172,12 @@
               <geom name="right_knee_link_collision" class="body_capsule" fromto="0 0 -0.04 0 0 -0.22" size="0.04" />
               <geom name="right_knee_link_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="right_knee_link.STL" class="visual" />
               <body name="right_ankle_pitch_link" pos="0 9.99999999979628E-05 -0.294662336087023" quat="1.0 0.0 0.0 0.0">
-                <joint name="right_ankle_pitch_joint" type="hinge" ref="0.0" class="motor" range="-0.35 0.35" axis="0 -1 0" armature="0.0565056" />
+                <joint name="right_ankle_pitch_joint" type="hinge" ref="0.0" class="motor" range="-0.7 0.7" axis="0 -1 0" armature="0.0565056" />
                 <inertial pos="-0.0011793692600079 6.86716864900516E-08 -0.00617614582815973" mass="0.27308917159726" fullinertia="6.42659452121946E-05 8.0994434836127E-05 4.71926012791403E-05 -1.02281345760111E-10 -1.07558770084606E-06 3.52701184357211E-10" />
                 
                 <geom name="right_ankle_pitch_link_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="right_ankle_pitch_link.STL" class="visual" />
                 <body name="right_ankle_roll_link" pos="-0.0015 0 -0.00999999200000001" quat="1.0 0.0 0.0 0.0">
-                  <joint name="right_ankle_roll_joint" type="hinge" ref="0.0" class="motor" range="-0.1 0.1" axis="-1 0 0" armature="0.0565056" />
+                  <joint name="right_ankle_roll_joint" type="hinge" ref="0.0" class="motor" range="-0.3 0.3" axis="-1 0 0" armature="0.0565056" />
                   <inertial pos="0.037604624066622 -0.00113270119001645 -0.0120667519779089" mass="0.405640437504617" fullinertia="0.000186422034243703 0.000416154288220916 0.00053831651520468 -1.26826355108374E-05 -1.31347174356107E-05 -5.51984757483379E-06" />
                   <geom name="right_ankle_roll_link_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="right_ankle_roll_link.STL" class="visual" />
                   <site name="right_foot" pos="0.04 0 -0.025" />
