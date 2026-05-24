@@ -123,27 +123,6 @@ class AsimovStandEnv(LeggedRobot):
         self.feet_height = torch.zeros((self.num_envs, 2), device=self.device)
         self.ref_dof_pos = torch.zeros((self.num_envs, self.num_actions), device=self.device)
 
-        # ── L/R mirror mask ────────────────────────────────────────────────
-        # Asimov's URDF uses mirror-axis convention: for the SAME physical
-        # pose (e.g. both legs forward), q_L = -q_R on all 6 leg DOFs. This
-        # means the policy network sees an asymmetrically-encoded world,
-        # which produced the asymmetric local minimum observed in v28 (only
-        # left leg lifts, forward command → leftward motion).
-        #
-        # Plan B fix: present the policy with a CANONICAL (L↔R symmetric)
-        # view by negating right-side joint values on the obs path, and
-        # un-negating right-side actions on the action path. Net effect:
-        # the policy sees a "virtual symmetric robot" while the URDF/sim
-        # still receive raw asymmetric values.
-        #
-        # DOF order (matches default_joint_angles dict):
-        #   0-5  : L {hip_pitch, hip_roll, hip_yaw, knee, ankle_pitch, ankle_roll}
-        #   6-11 : R {hip_pitch, hip_roll, hip_yaw, knee, ankle_pitch, ankle_roll}
-        # Multiplying right half by -1 converts between canonical ↔ raw.
-        self.mirror_mask = torch.tensor(
-            [1.0] * 6 + [-1.0] * 6, device=self.device, dtype=torch.float
-        ).unsqueeze(0)   # shape (1, 12) for broadcasting
-
 
     def _push_robots(self):
         """ Random pushes the robots. Emulates an impulse by setting a randomized base velocity.
@@ -380,16 +359,9 @@ class AsimovStandEnv(LeggedRobot):
 
     def step(self, actions):
         if self.cfg.env.use_ref_actions:
-            # ref_action is in RAW convention; convert to canonical before
-            # adding to the (canonical) policy action.
-            actions += self.ref_action * self.mirror_mask
+            actions += self.ref_action
         return super().step(actions)
 
-    def _compute_torques(self, actions):
-        # Actions arrive in CANONICAL frame (policy's symmetric view).
-        # Convert to RAW URDF frame by negating right-side joints before
-        # the base-class PD/scaling/lag pipeline.
-        return super()._compute_torques(actions * self.mirror_mask)
 
     def compute_observations(self):
 
@@ -407,16 +379,13 @@ class AsimovStandEnv(LeggedRobot):
 
         # critic no lag
         diff = self.dof_pos - self.ref_dof_pos
-        # All dof-side quantities are mirrored (right half * -1) so the critic
-        # sees the same canonical (L↔R symmetric) view as the actor.
-        # self.actions is already stored canonical (mirror applied in _compute_torques).
         # 73
         privileged_obs_buf = torch.cat((
             self.command_input,  # 2 + 3
-            (self.dof_pos - self.default_joint_pd_target) * self.obs_scales.dof_pos * self.mirror_mask,  # 12
-            self.dof_vel * self.obs_scales.dof_vel * self.mirror_mask,  # 12
-            self.actions,  # 12 — already canonical
-            diff * self.mirror_mask,  # 12
+            (self.dof_pos - self.default_joint_pd_target) * self.obs_scales.dof_pos,  # 12
+            self.dof_vel * self.obs_scales.dof_vel,  # 12
+            self.actions,  # 12
+            diff,  # 12
             self.base_lin_vel * self.obs_scales.lin_vel,  # 3
             self.base_ang_vel * self.obs_scales.ang_vel,  # 3
             self.base_euler_xyz * self.obs_scales.quat,  # 3
@@ -476,9 +445,9 @@ class AsimovStandEnv(LeggedRobot):
             self.lagged_base_ang_vel = self.base_ang_vel[:,:3]
             self.lagged_base_euler_xyz = self.base_euler_xyz[:,-3:]
 
-        # obs q and dq — mirror right half so policy sees canonical (L↔R symmetric) view.
-        q = (self.lagged_dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos * self.mirror_mask
-        dq = self.lagged_dof_vel * self.obs_scales.dof_vel * self.mirror_mask
+        # obs q and dq
+        q = (self.lagged_dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos
+        dq = self.lagged_dof_vel * self.obs_scales.dof_vel
 
         # 47
         obs_buf = torch.cat((

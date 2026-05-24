@@ -147,14 +147,6 @@ def run_mujoco(policy, cfg, env_cfg):
     target_q = np.zeros((env_cfg.env.num_actions), dtype=np.double)
     action = np.zeros((env_cfg.env.num_actions), dtype=np.double)
 
-    # ── L/R mirror mask (must match asimov_stand_env.py) ─────────────────
-    # The policy was trained with canonical (L↔R symmetric) joint encoding.
-    # MuJoCo's dof_pos/dof_vel come out in RAW URDF convention, so we mirror
-    # the right half before feeding to policy (obs path). The policy outputs
-    # canonical actions, so we mirror right half back to raw before PD.
-    # Layout: 0-5=L{hip_p,hip_r,hip_y,knee,ankle_p,ankle_r}, 6-11=R{same}.
-    mirror_mask = np.array([1.0]*6 + [-1.0]*6, dtype=np.double)
-
     hist_obs = deque()
     for _ in range(env_cfg.env.frame_stack):
         hist_obs.append(np.zeros([1, env_cfg.env.num_single_obs], dtype=np.double))
@@ -231,10 +223,8 @@ def run_mujoco(policy, cfg, env_cfg):
                 obs[0, 0] = x_vel_cmd * env_cfg.normalization.obs_scales.lin_vel
                 obs[0, 1] = y_vel_cmd * env_cfg.normalization.obs_scales.lin_vel
                 obs[0, 2] = yaw_vel_cmd * env_cfg.normalization.obs_scales.ang_vel
-            # dof_pos / dof_vel from MuJoCo are RAW URDF convention → mirror right half to canonical for policy.
-            obs[0, env_cfg.env.num_commands:env_cfg.env.num_commands+env_cfg.env.num_actions] = (q - cfg.robot_config.default_dof_pos) * env_cfg.normalization.obs_scales.dof_pos * mirror_mask
-            obs[0, env_cfg.env.num_commands+env_cfg.env.num_actions:env_cfg.env.num_commands+2*env_cfg.env.num_actions] = dq * env_cfg.normalization.obs_scales.dof_vel * mirror_mask
-            # `action` already holds the previous CANONICAL policy output, no mirror needed.
+            obs[0, env_cfg.env.num_commands:env_cfg.env.num_commands+env_cfg.env.num_actions] = (q - cfg.robot_config.default_dof_pos) * env_cfg.normalization.obs_scales.dof_pos
+            obs[0, env_cfg.env.num_commands+env_cfg.env.num_actions:env_cfg.env.num_commands+2*env_cfg.env.num_actions] = dq * env_cfg.normalization.obs_scales.dof_vel
             obs[0, env_cfg.env.num_commands+2*env_cfg.env.num_actions:env_cfg.env.num_commands+3*env_cfg.env.num_actions] = action
             obs[0, env_cfg.env.num_commands+3*env_cfg.env.num_actions:env_cfg.env.num_commands+3*env_cfg.env.num_actions+3] = omega
             obs[0, env_cfg.env.num_commands+3*env_cfg.env.num_actions+3:env_cfg.env.num_commands+3*env_cfg.env.num_actions+6] = eu_ang
@@ -258,11 +248,7 @@ def run_mujoco(policy, cfg, env_cfg):
 
             action[:] = policy(torch.tensor(policy_input))[0].detach().numpy()
             action = np.clip(action, -env_cfg.normalization.clip_actions, env_cfg.normalization.clip_actions)
-            # Policy outputs CANONICAL action. Convert right half back to RAW
-            # URDF convention for the PD controller (which expects target_q as
-            # raw offset from raw default_dof_pos). Keep `action` itself canonical
-            # so the next obs's prev_action slot stays canonical (matches training).
-            target_q = (action * mirror_mask) * env_cfg.control.action_scale
+            target_q = action * env_cfg.control.action_scale
 
         target_dq = np.zeros((env_cfg.env.num_actions), dtype=np.double)
         # Generate PD control

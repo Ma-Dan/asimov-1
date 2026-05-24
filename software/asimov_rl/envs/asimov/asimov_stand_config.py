@@ -313,7 +313,7 @@ class AsimovStandCfg(LeggedRobotCfg):
         sw_switch = True
 
         class ranges:
-            lin_vel_x = [-0.4, 1.2]
+            lin_vel_x = [0.0, 1.2]      # was [-0.4, 1.2]. Asimov's ankle sits at 20% from heel (3.5cm heel margin vs X1's 7cm) — backward walking is mechanically impossible and was causing rew_low_speed to stay negative all training. Drop backward command range until foot geometry is fixed. See memory: project_asimov_foot_geometry.
             lin_vel_y = [-0.4, 0.4]
             ang_vel_yaw = [-0.6, 0.6]
             heading = [-3.14, 3.14]
@@ -346,9 +346,16 @@ class AsimovStandCfg(LeggedRobotCfg):
         # X1 hip 0.25 / knee 0.35 / ankle 0.16 produces ~28° hip swing).
         # Ankle reduced from X1's 0.16 to 0.13 because Asimov's ankle limit
         # is ±0.35 and default is now ±0.20; 0.13 leaves clearance vs limit.
+        #
+        # Knee bumped from ±0.35 to ±0.50 after test_walk_zerog.py verified that
+        # at knee=0.35 the reference only achieves 2.4cm foot lift — below the
+        # rew_feet_clearance window of [3cm, 6cm]. Policy was forced to overshoot
+        # to get the reward, conflicting with rew_ref_joint_pos. At knee=0.50,
+        # reference cleanly lands 3.6cm, in the middle of the reward window.
+        # Joint range check: L_knee default+swing = 0.40+0.50 = 0.90, range [0, 1.5] ✓
         final_swing_joint_delta_pos = [
-            -0.25,  0.05, 0.0,  0.35, -0.13, 0.0,   # left  (forward swing)
-            +0.25, -0.05, 0.0, -0.35, +0.13, 0.0,   # right (mirrored axes)
+            -0.25,  0.05, 0.0,  0.50, -0.13, 0.0,   # left  (forward swing)
+            +0.25, -0.05, 0.0, -0.50, +0.13, 0.0,   # right (mirrored axes)
         ]
         target_feet_height = 0.03
         target_feet_height_max = 0.06
