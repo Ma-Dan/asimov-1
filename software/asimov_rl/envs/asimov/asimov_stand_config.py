@@ -352,7 +352,7 @@ class AsimovStandCfg(LeggedRobotCfg):
         cycle_time = 0.7
         only_positive_rewards = True
         tracking_sigma = 5
-        max_contact_force = 700
+        max_contact_force = 1200
 
         class scales:
             ref_joint_pos = 2.2
@@ -362,7 +362,7 @@ class AsimovStandCfg(LeggedRobotCfg):
             foot_slip = -0.1
             feet_distance = 0.2
             knee_distance = 0.2
-            feet_contact_forces = -0.01
+            feet_contact_forces = -0.002
             tracking_lin_vel = 1.8        # v12 boosted to 5.0 but plateaued — reverted to v11 baseline
             tracking_ang_vel = 1.1        # v12: 2.5, reverted
             vel_mismatch_exp = 0.5
