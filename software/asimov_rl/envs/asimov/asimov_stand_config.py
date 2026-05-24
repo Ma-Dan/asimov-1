@@ -121,28 +121,29 @@ class AsimovStandCfg(LeggedRobotCfg):
         # rotation here moves the leg backward), and knee positive to bend
         # toward flexion. Verified with tools/test_default_pose.py.
         default_joint_angles = {
-            # hip_pitch reverted to ±0.20 after v27 (May 23 2026) showed ±0.25
-            # backfired: dof_pos_limits dropped from -0.028 to -0.013 (policy
-            # AVOIDED the limit instead of pushing through) and feet_clearance
-            # halved (0.019 → 0.007). Even with dof_pos_limits scale relaxed to
-            # -1, the soft-limit penalty still steers the policy away from
-            # ankle excursions, so a more aggressive default (closer to the
-            # limit) actively suppresses the ankle motion needed for toe lift.
-            # ±0.20 leaves COM +1.6cm forward of foot midpoint (sweep_default_pose);
-            # the resulting backward-instability / lateral-walk problem must be
-            # solved by other means (command-range or swing-magnitude) — not by
-            # pushing default pose closer to limits.
-            'left_hip_pitch_joint':   -0.20,
+            # Sagittal COM centering: hip_pitch ±0.25 (was ±0.20).
+            # sweep_default_pose.py: ±0.20 leaves COM 1.6cm forward of foot
+            # midpoint; ±0.25 puts COM 0.6cm behind foot midpoint (slight back
+            # bias, symmetric fore/aft margin). v27's ±0.25 backfired under
+            # conditions that have since changed (mirror was hurting training,
+            # lin_vel_x included backward commands the foot geometry can't
+            # support, knee swing was only ±0.35 keeping ref too low). With
+            # those corrected and dof_pos_limits scale at -1 (soft), retry
+            # ±0.25 hip / ∓0.25 ankle. Watch: ankle default ±0.25 + swing
+            # delta ±0.13 → ±0.38 exceeds ±0.35 limit by 3°; tolerable as soft
+            # penalty but if rew_dof_pos_limits worsens, lower swing ankle
+            # delta from ±0.13 to ±0.08.
+            'left_hip_pitch_joint':   -0.25,
             'left_hip_roll_joint':    0.10,
             'left_hip_yaw_joint':     0.0,
             'left_knee_joint':        0.40,
-            'left_ankle_pitch_joint':-0.20,     # match hip to keep shank vertical
+            'left_ankle_pitch_joint':-0.25,     # match hip to keep shank vertical
             'left_ankle_roll_joint':  0.0,
-            'right_hip_pitch_joint':  0.20,     # mirror
+            'right_hip_pitch_joint':  0.25,     # mirror
             'right_hip_roll_joint':  -0.10,
             'right_hip_yaw_joint':    0.0,
             'right_knee_joint':      -0.40,
-            'right_ankle_pitch_joint': 0.20,    # mirror
+            'right_ankle_pitch_joint': 0.25,    # mirror
             'right_ankle_roll_joint': 0.0,
         }
 
