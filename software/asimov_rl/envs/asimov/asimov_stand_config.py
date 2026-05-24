@@ -355,9 +355,9 @@ class AsimovStandCfg(LeggedRobotCfg):
         # reference cleanly lands 3.6cm, in the middle of the reward window.
         # Joint range check: L_knee default+swing = 0.40+0.50 = 0.90, range [0, 1.5] ✓
         final_swing_joint_delta_pos = [
-            -0.25,  0.05, 0.0,  0.50, -0.13, 0.0,   # left  (forward swing)
-            +0.25, -0.05, 0.0, -0.50, +0.13, 0.0,   # right (mirrored axes)
-        ]
+            -0.25,  0.05, 0.0,  0.35, -0.13, 0.0,   # left  (forward swing)
+            +0.25, -0.05, 0.0, -0.35, +0.13, 0.0,   # right (mirrored axes)
+        ]   # knee reverted 0.50 → 0.35 after v31 showed bigger swing → harder landings → contact penalty → policy retreats → less actual lift (0.014 → 0.004). Smaller swing + relaxed contact threshold (1200N) is better-suited combo than aggressive swing + tight threshold.
         target_feet_height = 0.03
         target_feet_height_max = 0.06
         feet_to_ankle_distance = 0.041
@@ -374,7 +374,7 @@ class AsimovStandCfg(LeggedRobotCfg):
             foot_slip = -0.1
             feet_distance = 0.2
             knee_distance = 0.2
-            feet_contact_forces = -0.01
+            feet_contact_forces = -0.002   # was -0.01 (X1 baseline) → -0.005 → -0.002 (further reduction). Asimov has heel-at-back foot geometry that concentrates landing impact through the ankle joint (vs X1's centered ankle). This gives chronically higher peak forces than X1 sees, so a weaker penalty (5× weaker than baseline) is needed to avoid the v31 negative-feedback trap where contact penalty suppresses the swing-leg lift. Combined with raised max_contact_force=1200.
             tracking_lin_vel = 1.8        # v12 boosted to 5.0 but plateaued — reverted to v11 baseline
             tracking_ang_vel = 1.1        # v12: 2.5, reverted
             vel_mismatch_exp = 0.5
