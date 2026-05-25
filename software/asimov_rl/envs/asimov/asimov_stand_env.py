@@ -122,6 +122,15 @@ class AsimovStandEnv(LeggedRobot):
         self.last_feet_z = self.cfg.rewards.feet_to_ankle_distance
         self.feet_height = torch.zeros((self.num_envs, 2), device=self.device)
         self.ref_dof_pos = torch.zeros((self.num_envs, self.num_actions), device=self.device)
+        # Asimov's URDF uses mirrored axes on hip_pitch/knee/ankle_pitch: the same
+        # physical forward-swing pose requires opposite signs on left vs right.
+        # Without this mask the policy sees an asymmetric observation space and
+        # converges to asymmetric gaits (v28: only left leg lifts). Negating the
+        # right half converts raw URDF values to a canonical L↔R symmetric view
+        # for both actor and critic; actions are un-negated before the PD step.
+        self.mirror_mask = torch.tensor(
+            [1.0] * 6 + [-1.0] * 6, device=self.device, dtype=torch.float
+        ).unsqueeze(0)  # (1, 12)
 
 
     def _push_robots(self):
@@ -359,9 +368,12 @@ class AsimovStandEnv(LeggedRobot):
 
     def step(self, actions):
         if self.cfg.env.use_ref_actions:
-            actions += self.ref_action
+            actions += self.ref_action * self.mirror_mask
         return super().step(actions)
 
+    def _compute_torques(self, actions):
+        # Actions arrive in canonical frame; convert right half back to raw URDF.
+        return super()._compute_torques(actions * self.mirror_mask)
 
     def compute_observations(self):
 
@@ -377,14 +389,14 @@ class AsimovStandEnv(LeggedRobot):
         self.command_input = torch.cat(
             (sin_pos, cos_pos, self.commands[:, :3] * self.commands_scale), dim=1)
 
-        # critic no lag
-        diff = self.dof_pos - self.ref_dof_pos
+        # critic no lag — right half mirrored to canonical view
+        diff = (self.dof_pos - self.ref_dof_pos) * self.mirror_mask
         # 73
         privileged_obs_buf = torch.cat((
             self.command_input,  # 2 + 3
-            (self.dof_pos - self.default_joint_pd_target) * self.obs_scales.dof_pos,  # 12
-            self.dof_vel * self.obs_scales.dof_vel,  # 12
-            self.actions,  # 12
+            (self.dof_pos - self.default_joint_pd_target) * self.obs_scales.dof_pos * self.mirror_mask,  # 12
+            self.dof_vel * self.obs_scales.dof_vel * self.mirror_mask,  # 12
+            self.actions,  # 12 — already canonical (stored after mirror applied in _compute_torques)
             diff,  # 12
             self.base_lin_vel * self.obs_scales.lin_vel,  # 3
             self.base_ang_vel * self.obs_scales.ang_vel,  # 3
@@ -445,9 +457,9 @@ class AsimovStandEnv(LeggedRobot):
             self.lagged_base_ang_vel = self.base_ang_vel[:,:3]
             self.lagged_base_euler_xyz = self.base_euler_xyz[:,-3:]
 
-        # obs q and dq
-        q = (self.lagged_dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos
-        dq = self.lagged_dof_vel * self.obs_scales.dof_vel
+        # obs q and dq — mirror right half to canonical view
+        q = (self.lagged_dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos * self.mirror_mask
+        dq = self.lagged_dof_vel * self.obs_scales.dof_vel * self.mirror_mask
 
         # 47
         obs_buf = torch.cat((

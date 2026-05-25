@@ -123,7 +123,7 @@
                 
                 <geom name="left_ankle_pitch_link_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="left_ankle_pitch_link.STL" class="visual" />
                 <body name="left_ankle_roll_link" pos="-0.00149999999999975 0 -0.00999999200000223" quat="1.0 0.0 0.0 0.0">
-                  <joint name="left_ankle_roll_joint" type="hinge" ref="0.0" class="motor" range="-0.1 0.1" axis="-1 0 0" armature="0.0565056" />
+                  <joint name="left_ankle_roll_joint" type="hinge" ref="0.0" class="motor" range="-0.2 0.2" axis="-1 0 0" armature="0.0565056" />
                   <inertial pos="0.0427499381311452 0.00159257307585033 -0.013245065948313" mass="0.405640437504617" fullinertia="0.000176487912025914 0.000413325911157839 0.000531913025014091 1.27462095049061E-05 -1.32327317762052E-05 5.53283535966561E-06" />
                   <geom name="left_ankle_roll_link_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="left_ankle_roll_link.STL" class="visual" />
                   <site name="left_foot" pos="0.04 0 -0.025" />
@@ -177,7 +177,7 @@
                 
                 <geom name="right_ankle_pitch_link_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="right_ankle_pitch_link.STL" class="visual" />
                 <body name="right_ankle_roll_link" pos="-0.0015 0 -0.00999999200000001" quat="1.0 0.0 0.0 0.0">
-                  <joint name="right_ankle_roll_joint" type="hinge" ref="0.0" class="motor" range="-0.1 0.1" axis="-1 0 0" armature="0.0565056" />
+                  <joint name="right_ankle_roll_joint" type="hinge" ref="0.0" class="motor" range="-0.2 0.2" axis="-1 0 0" armature="0.0565056" />
                   <inertial pos="0.037604624066622 -0.00113270119001645 -0.0120667519779089" mass="0.405640437504617" fullinertia="0.000186422034243703 0.000416154288220916 0.00053831651520468 -1.26826355108374E-05 -1.31347174356107E-05 -5.51984757483379E-06" />
                   <geom name="right_ankle_roll_link_visual" pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="right_ankle_roll_link.STL" class="visual" />
                   <site name="right_foot" pos="0.04 0 -0.025" />

@@ -355,9 +355,9 @@ class AsimovStandCfg(LeggedRobotCfg):
         # reference cleanly lands 3.6cm, in the middle of the reward window.
         # Joint range check: L_knee default+swing = 0.40+0.50 = 0.90, range [0, 1.5] ✓
         final_swing_joint_delta_pos = [
-            -0.25,  0.05, 0.0,  0.35, -0.13, 0.0,   # left  (forward swing)
-            +0.25, -0.05, 0.0, -0.35, +0.13, 0.0,   # right (mirrored axes)
-        ]   # knee reverted 0.50 → 0.35 after v31 showed bigger swing → harder landings → contact penalty → policy retreats → less actual lift (0.014 → 0.004). Smaller swing + relaxed contact threshold (1200N) is better-suited combo than aggressive swing + tight threshold.
+            -0.25,  0.05, 0.0,  0.35, -0.08, 0.0,   # left  (forward swing)
+            +0.25, -0.05, 0.0, -0.35, +0.08, 0.0,   # right (mirrored axes)
+        ]   # ankle delta reduced ±0.13 → ±0.08: default ±0.25 + delta ±0.13 = ±0.38 exceeded the ±0.35 URDF hard limit, causing the ankle to hit the physical stop every swing cycle. At ±0.08, peak = ±0.33, leaving 2° clearance vs the soft limit (0.98×0.35=0.343). knee reverted 0.50 → 0.35 (see prev comment).
         target_feet_height = 0.03
         target_feet_height_max = 0.06
         feet_to_ankle_distance = 0.041
