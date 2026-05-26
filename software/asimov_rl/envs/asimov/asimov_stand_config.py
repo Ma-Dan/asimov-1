@@ -362,7 +362,7 @@ class AsimovStandCfg(LeggedRobotCfg):
         target_feet_height_max = 0.06
         feet_to_ankle_distance = 0.041
         cycle_time = 0.7
-        only_positive_rewards = True
+        only_positive_rewards = False   # True caused asymmetric gait: feet_contact_number penalty (-0.3/foot when contact != stance_mask) was clipped to 0, removing the incentive to lift the right foot during right-swing phase. With False, wrong contact costs -0.6/step → policy must learn bilateral gait.
         tracking_sigma = 5
         max_contact_force = 1200    # was 700 (X1 baseline). v31 data showed contact penalty in negative feedback: knee swing 0.50 → harder landings → -0.49 contact reward → policy retreats from full swing → feet_clearance dropped (0.014 → 0.004). Asimov body weight is ~318N; 700 = 2.2× weight is too tight for the policy's exploration during landing. 1200 = 3.8× weight gives RL room to learn full-amplitude gait. See measure_contact_forces.py (open-loop walk peaks at ~390N) and v31 trajectory.
 
