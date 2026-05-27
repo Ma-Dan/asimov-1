@@ -314,7 +314,7 @@ class AsimovStandCfg(LeggedRobotCfg):
         sw_switch = True
 
         class ranges:
-            lin_vel_x = [0.0, 1.2]      # was [-0.4, 1.2]. Asimov's ankle sits at 20% from heel (3.5cm heel margin vs X1's 7cm) — backward walking is mechanically impossible and was causing rew_low_speed to stay negative all training. Drop backward command range until foot geometry is fixed. See memory: project_asimov_foot_geometry.
+            lin_vel_x = [-0.4, 1.2]     # re-enabled backward after mirror_mask corrected (v36 fix). Asimov heel margin is 3.5cm (20% from heel); backward is harder than X1 but not physically impossible — requires lean compensation within ~3° vs X1's ~6°. Paired experiment vs fix/backward (forward-only) to measure cost of including backward commands.
             lin_vel_y = [-0.4, 0.4]
             ang_vel_yaw = [-0.6, 0.6]
             heading = [-3.14, 3.14]
