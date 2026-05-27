@@ -122,14 +122,25 @@ class AsimovStandEnv(LeggedRobot):
         self.last_feet_z = self.cfg.rewards.feet_to_ankle_distance
         self.feet_height = torch.zeros((self.num_envs, 2), device=self.device)
         self.ref_dof_pos = torch.zeros((self.num_envs, self.num_actions), device=self.device)
-        # Asimov's URDF uses mirrored axes on hip_pitch/knee/ankle_pitch: the same
-        # physical forward-swing pose requires opposite signs on left vs right.
-        # Without this mask the policy sees an asymmetric observation space and
-        # converges to asymmetric gaits (v28: only left leg lifts). Negating the
-        # right half converts raw URDF values to a canonical L↔R symmetric view
-        # for both actor and critic; actions are un-negated before the PD step.
+        # Per-joint canonical mirror mask derived from URDF rotation axes:
+        # DOF order: [L: hip_pitch, hip_roll, hip_yaw, knee, ankle_pitch, ankle_roll,
+        #             R: hip_pitch, hip_roll, hip_yaw, knee, ankle_pitch, ankle_roll]
+        #
+        # Axis comparison (left vs right):
+        #   hip_pitch:   +Y vs -Y  → opposite → negate right  (-1)
+        #   hip_roll:    +X vs +X  → same     → keep right     (+1)
+        #   hip_yaw:     -Z vs -Z  → same     → keep right     (+1)
+        #   knee:        +Y vs -Y  → opposite → negate right  (-1)
+        #   ankle_pitch: +Y vs -Y  → opposite → negate right  (-1)
+        #   ankle_roll:  -X vs -X  → same     → keep right     (+1)
+        #
+        # Previous mask [1]*6+[-1]*6 incorrectly negated hip_roll, hip_yaw,
+        # ankle_roll on the right side, causing rightward drift and right-turn
+        # instability (v35/v36 symptoms).
         self.mirror_mask = torch.tensor(
-            [1.0] * 6 + [-1.0] * 6, device=self.device, dtype=torch.float
+            [1., 1., 1., 1., 1., 1.,   # left side (all unchanged)
+            -1., 1., 1.,-1.,-1., 1.],  # right: negate pitch/knee, keep roll/yaw
+            device=self.device, dtype=torch.float
         ).unsqueeze(0)  # (1, 12)
 
 

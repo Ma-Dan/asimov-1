@@ -146,9 +146,9 @@ def run_mujoco(policy, cfg, env_cfg):
     viewer = mujoco_viewer.MujocoViewer(model, data)
     target_q = np.zeros((env_cfg.env.num_actions), dtype=np.double)
     action = np.zeros((env_cfg.env.num_actions), dtype=np.double)
-    # Must match asimov_stand_env.py mirror_mask: negate right half on obs path,
-    # un-negate on action path so policy sees canonical L↔R symmetric encoding.
-    mirror_mask = np.array([1.0]*6 + [-1.0]*6, dtype=np.double)
+    # Must match asimov_stand_env.py mirror_mask exactly.
+    # Right side: negate pitch/knee (opposite URDF axes), keep roll/yaw (same axes).
+    mirror_mask = np.array([1., 1., 1., 1., 1., 1., -1., 1., 1., -1., -1., 1.], dtype=np.double)
 
     hist_obs = deque()
     for _ in range(env_cfg.env.frame_stack):
